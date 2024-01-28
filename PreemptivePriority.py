@@ -9,6 +9,13 @@ class Process:
         self.turnaround_time = 0
         self.waiting_time = 0
 
+def calculate_turnaround_time(processes):
+    total_turnaround_time = 0
+    for process in processes:
+        process.turnaround_time = process.turnaround_time + process.arrival_time
+        total_turnaround_time += process.turnaround_time
+    return total_turnaround_time
+
 def calculate_waiting_time(processes):
     total_waiting_time = 0
     for process in processes:
@@ -16,45 +23,42 @@ def calculate_waiting_time(processes):
         total_waiting_time += process.waiting_time
     return total_waiting_time
 
-def calculate_turnaround_time(processes):
-    total_turnaround_time = 0
-    for process in processes:
-        process.turnaround_time = process.turnaround_time - process.arrival_time
-        total_turnaround_time += process.turnaround_time
-    return total_turnaround_time
-
 def priority_scheduling(processes):
     gantt_chart = []
     time = 0
-    while processes:
-        ready_processes = [process for process in processes if process.arrival_time <= time and process.remaining_time > 0]
+    finished_processes = 0
+    processes.sort(key=lambda x: (x.arrival_time, x.priority))
+
+    # Continue the loop until all processes are finished
+    while finished_processes < len(processes):
+        # Get processes that have arrived and are not finished
+        ready_processes = [p for p in processes if p.arrival_time <= time and p.remaining_time > 0]
+
         if not ready_processes:
             time += 1
+            gantt_chart.append(0)  # Idle time slot in Gantt chart
             continue
 
+        # Sort ready processes by priority
         ready_processes.sort(key=lambda x: x.priority)
         current_process = ready_processes[0]
 
-        if current_process.remaining_time == current_process.burst_time:
-            current_process.start_time = time
-        time += 1
+        # Process runs for one time unit
         current_process.remaining_time -= 1
         gantt_chart.append(current_process.pid)
+        time += 1
 
+        # If the process finished, calculate its turnaround and waiting times
         if current_process.remaining_time == 0:
-            current_process.turnaround_time = time
-            processes.remove(current_process)
+            current_process.turnaround_time = time - current_process.arrival_time
+            current_process.waiting_time = current_process.turnaround_time - current_process.burst_time
+            finished_processes += 1
 
-    if not gantt_chart:
-        total_turnaround_time = 0
-        total_waiting_time = 0
-        average_turnaround_time = 0
-        average_waiting_time = 0
-    else:
-        total_turnaround_time = calculate_turnaround_time(processes)
-        total_waiting_time = calculate_waiting_time(processes)
-        average_turnaround_time = total_turnaround_time / len(gantt_chart)
-        average_waiting_time = total_waiting_time / len(gantt_chart)
+    # Calculate total and average times
+    total_turnaround_time = sum(p.turnaround_time for p in processes)
+    total_waiting_time = sum(p.waiting_time for p in processes)
+    average_turnaround_time = total_turnaround_time / len(processes)
+    average_waiting_time = total_waiting_time / len(processes)
 
     return gantt_chart, total_turnaround_time, average_turnaround_time, total_waiting_time, average_waiting_time
 
