@@ -26,6 +26,8 @@ def calculate_turnaround_time(processes):
 def priority_scheduling(processes):
     gantt_chart = []
     time = 0
+    processes.sort(key=lambda x: (x.arrival_time, x.priority))
+    
     while processes:
         ready_processes = [process for process in processes if process.arrival_time <= time and process.remaining_time > 0]
         if not ready_processes:
@@ -37,13 +39,12 @@ def priority_scheduling(processes):
 
         if current_process.remaining_time == current_process.burst_time:
             current_process.start_time = time
-        time += 1
-        current_process.remaining_time -= 1
-        gantt_chart.append(current_process.pid)
+        time += current_process.remaining_time
+        current_process.remaining_time = 0
+        gantt_chart.append((current_process.pid, current_process.start_time, time))
 
-        if current_process.remaining_time == 0:
-            current_process.turnaround_time = time
-            processes.remove(current_process)
+        current_process.turnaround_time = time
+        processes.remove(current_process)
 
     if not gantt_chart:
         total_turnaround_time = 0
@@ -60,8 +61,8 @@ def priority_scheduling(processes):
 
 def display_gantt_chart(gantt_chart):
     print("Gantt Chart:")
-    for process in gantt_chart:
-        print(f"| P{process} ", end="")
+    for entry in gantt_chart:
+        print(f"| P{entry[0]} ", end="")
     print("|")
 
 if __name__ == "__main__":
