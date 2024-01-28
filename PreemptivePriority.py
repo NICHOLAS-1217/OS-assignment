@@ -72,8 +72,8 @@ if __name__ == "__main__":
 
     processes = []
     for i in range(num_processes):
-        arrival_time = int(input(f"Enter arrival time for P{i}: "))
         burst_time = int(input(f"Enter burst time for P{i}: "))
+        arrival_time = int(input(f"Enter arrival time for P{i}: "))
         priority = int(input(f"Enter priority for P{i}: "))
         processes.append(Process(i, arrival_time, burst_time, priority))
 
