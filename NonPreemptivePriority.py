@@ -9,6 +9,13 @@ class Process:
         self.turnaround_time = 0
         self.waiting_time = 0
 
+def calculate_turnaround_time(processes):
+    total_turnaround_time = 0
+    for process in processes:
+        process.turnaround_time = process.start_time + process.burst_time - process.arrival_time
+        total_turnaround_time += process.turnaround_time
+    return total_turnaround_time
+
 def calculate_waiting_time(processes):
     total_waiting_time = 0
     for process in processes:
@@ -16,69 +23,65 @@ def calculate_waiting_time(processes):
         total_waiting_time += process.waiting_time
     return total_waiting_time
 
-def calculate_turnaround_time(processes):
-    total_turnaround_time = 0
-    for process in processes:
-        process.turnaround_time = process.turnaround_time - process.arrival_time
-        total_turnaround_time += process.turnaround_time
-    return total_turnaround_time
-
 def priority_scheduling(processes):
     gantt_chart = []
     time = 0
+    ready_processes = []
+    finished_processes = []  # Keep track of finished processes
+
     processes.sort(key=lambda x: (x.arrival_time, x.priority))
-    
-    while processes:
-        ready_processes = [process for process in processes if process.arrival_time <= time and process.remaining_time > 0]
+
+    while processes or ready_processes:
+        while processes and processes[0].arrival_time <= time:
+            ready_processes.append(processes.pop(0))
+
         if not ready_processes:
             time += 1
+            gantt_chart.append(0)
             continue
 
         ready_processes.sort(key=lambda x: x.priority)
-        current_process = ready_processes[0]
+        current_process = ready_processes.pop(0)
 
         if current_process.remaining_time == current_process.burst_time:
             current_process.start_time = time
+
         time += current_process.remaining_time
-        current_process.remaining_time = 0
         gantt_chart.append((current_process.pid, current_process.start_time, time))
 
-        current_process.turnaround_time = time
-        processes.remove(current_process)
+        current_process.remaining_time = 0  # Process is now finished
+        current_process.turnaround_time = time - current_process.arrival_time
+        current_process.waiting_time = current_process.turnaround_time - current_process.burst_time
+        finished_processes.append(current_process)  # Add to finished list
 
-    if not gantt_chart:
-        total_turnaround_time = 0
-        total_waiting_time = 0
-        average_turnaround_time = 0
-        average_waiting_time = 0
-    else:
-        total_turnaround_time = calculate_turnaround_time(processes)
-        total_waiting_time = calculate_waiting_time(processes)
-        average_turnaround_time = total_turnaround_time / len(gantt_chart)
-        average_waiting_time = total_waiting_time / len(gantt_chart)
+    total_turnaround_time = calculate_turnaround_time(finished_processes)
+    total_waiting_time = calculate_waiting_time(finished_processes)
+
+    average_turnaround_time = total_turnaround_time / len(finished_processes)
+    average_waiting_time = total_waiting_time / len(finished_processes)
 
     return gantt_chart, total_turnaround_time, average_turnaround_time, total_waiting_time, average_waiting_time
 
 def display_gantt_chart(gantt_chart):
     print("Gantt Chart:")
     for entry in gantt_chart:
-        print(f"| P{entry[0]} ", end="")
+        if entry == 0:
+            print("| IDLE ", end="")
+        else:
+            print(f"| P{entry[0]} ", end="")
     print("|")
 
 if __name__ == "__main__":
-    # input number of processes
     num_processes = int(input("Enter the number of processes (3 to 10): "))
     if num_processes < 3 or num_processes > 10:
         print("Number of processes should be between 3 and 10.")
         exit()
 
-    # process list
     processes = []
     for i in range(num_processes):
         burst_time = int(input(f"Enter burst time for P{i}: "))
         arrival_time = int(input(f"Enter arrival time for P{i}: "))
         priority = int(input(f"Enter priority for P{i}: "))
-        # add process to the list
         processes.append(Process(i, arrival_time, burst_time, priority))
 
     gantt_chart, total_turnaround_time, avg_turnaround_time, total_waiting_time, avg_waiting_time = priority_scheduling(processes)
